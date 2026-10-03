@@ -609,6 +609,7 @@ public class WindowManagerService extends IWindowManager.Stub
 
     final AppOpsManager mAppOps;
     final PackageManagerInternal mPmInternal;
+    final ColorRenderingPolicy mColorRenderingPolicy;
     private final TestUtilityService mTestUtilityService;
 
     @NonNull
@@ -1377,6 +1378,7 @@ public class WindowManagerService extends IWindowManager.Stub
         mAppOps.startWatchingMode(AppOpsManager.OP_TOAST_WINDOW, null, opListener);
 
         mPmInternal = LocalServices.getService(PackageManagerInternal.class);
+        mColorRenderingPolicy = new ColorRenderingPolicy(context, mPmInternal);
         mTestUtilityService = LocalServices.getService(TestUtilityService.class);
         final IntentFilter suspendPackagesFilter = new IntentFilter();
         suspendPackagesFilter.addAction(Intent.ACTION_PACKAGES_SUSPENDED);

@@ -794,6 +794,13 @@ public final class SurfaceControl implements Parcelable {
     public static final int RECOVERABLE_FROM_BUFFER_STUFFING = 0x00002000;
 
     /**
+     * ReclaimOS: layer state flag marking a layer as allowed to be composited in color. Layers
+     * without it are composited in grayscale. Private because the value overlaps the
+     * NO_COLOR_FILL creation flag; set it with {@link Transaction#setColorAllowed}.
+     */
+    private static final int COLOR_ALLOWED = 0x00004000;
+
+    /**
      * Surface creation flag: Creates a surface where color components are interpreted
      * as "non pre-multiplied" by their alpha channel. Of course this flag is
      * meaningless for surfaces without an alpha channel. By default
@@ -4781,6 +4788,20 @@ public final class SurfaceControl implements Parcelable {
             checkPreconditions(sc);
             final int value = (canOccludePresentation) ? CAN_OCCLUDE_PRESENTATION : 0;
             nativeSetFlags(mNativeObject, sc.mNativeObject, value, CAN_OCCLUDE_PRESENTATION);
+            return this;
+        }
+
+        /**
+         * Sets whether the layer and the layers its owner creates beneath it may be composited
+         * in color. Everything else is composited in grayscale. This is a system policy
+         * decision made by WindowManager; SurfaceFlinger ignores it from callers without the
+         * ACCESS_SURFACE_FLINGER permission.
+         * @hide
+         */
+        public Transaction setColorAllowed(SurfaceControl sc, boolean allowed) {
+            checkPreconditions(sc);
+            final int value = allowed ? COLOR_ALLOWED : 0;
+            nativeSetFlags(mNativeObject, sc.mNativeObject, value, COLOR_ALLOWED);
             return this;
         }
 

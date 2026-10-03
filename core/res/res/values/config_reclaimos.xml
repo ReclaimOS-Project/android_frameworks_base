@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2026 The ReclaimOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Packages whose app windows may be composited in color. Everything else on screen,
+         including system UI drawn over these apps, is composited in grayscale.
+
+         This is OS policy, not a user preference: it is not exposed in Settings and apps
+         cannot add themselves. WindowManager only honors entries that are system packages
+         without a shared uid. Devices can extend the list with a build-time overlay. -->
+    <string-array name="config_reclaimOsColorAllowedPackages" translatable="false">
+        <item>org.lineageos.aperture</item>
+    </string-array>
+    <java-symbol type="array" name="config_reclaimOsColorAllowedPackages" />
+</resources>

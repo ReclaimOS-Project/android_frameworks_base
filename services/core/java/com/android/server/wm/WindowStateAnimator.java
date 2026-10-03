@@ -345,6 +345,12 @@ class WindowStateAnimator {
                         (attrs.privateFlags & LayoutParams.PRIVATE_FLAG_COLOR_SPACE_AGNOSTIC) != 0);
             }
 
+            // Everything is gray unless the system allows this window color. The surface is
+            // still hidden, so the flag is in place before its first frame is shown.
+            if (mService.mColorRenderingPolicy.isColorAllowed(w)) {
+                mWin.getPendingTransaction().setColorAllowed(mSurfaceControl, true);
+            }
+
             w.setHasSurface(true);
             // The surface instance is changed. Make sure the input info can be applied to the
             // new surface, e.g. relaunch activity.
