@@ -170,6 +170,11 @@ constructor(
                 context.resources.getBoolean(R.bool.force_small_clock_on_lockscreen)
 
     private fun getClockSize(): ClockSizeSetting {
+        // ReclaimOS lockscreen-v1: product policy is always the small clock. The user's
+        // setting is neither read nor written while this is enabled.
+        if (context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+            return ClockSizeSetting.SMALL
+        }
         return ClockSizeSetting.fromSettingValue(
             secureSettings.getIntForUser(
                 Settings.Secure.LOCKSCREEN_USE_DOUBLE_LINE_CLOCK,

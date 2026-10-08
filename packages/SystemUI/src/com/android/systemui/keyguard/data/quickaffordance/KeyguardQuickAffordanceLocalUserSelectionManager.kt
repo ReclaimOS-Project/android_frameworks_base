@@ -127,6 +127,11 @@ constructor(
             }
 
     override fun getSelections(): Map<String, List<String>> {
+        // ReclaimOS lockscreen-v1: no lock screen shortcuts, regardless of defaults or selections.
+        if (context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+            return emptyMap()
+        }
+
         // If the custom shortcuts feature is not enabled, ignore prior selections and use defaults
         if (!context.resources.getBoolean(R.bool.custom_lockscreen_shortcuts_enabled)) {
             return defaults

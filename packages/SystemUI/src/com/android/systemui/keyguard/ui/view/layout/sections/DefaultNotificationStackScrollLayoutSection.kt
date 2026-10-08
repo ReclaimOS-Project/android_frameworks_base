@@ -58,8 +58,15 @@ constructor(
             return
         }
         constraintSet.apply {
-            val bottomMargin =
+            var bottomMargin =
                 context.resources.getDimensionPixelSize(R.dimen.keyguard_status_view_bottom_margin)
+            // ReclaimOS lockscreen-v1: keep empty space below the clock and date.
+            if (context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+                bottomMargin +=
+                    context.resources.getDimensionPixelSize(
+                        R.dimen.reclaimos_keyguard_notification_extra_top_margin
+                    )
+            }
             if (MigrateClocksToBlueprint.isEnabled) {
                 val useLargeScreenHeader =
                     context.resources.getBoolean(R.bool.config_use_large_screen_shade_header)

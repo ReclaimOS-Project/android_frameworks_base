@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2026 The ReclaimOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- ReclaimOS lockscreen-v1: kill switch for the ReclaimOS primary lock screen presentation
+         (solid black background, light text, always-small centered white clock, centered date,
+         lower notifications, no lock screen shortcuts). Set to false to restore the stock
+         presentation. -->
+    <bool name="config_reclaimosLockscreen">true</bool>
+
+    <!-- ReclaimOS lockscreen-v1: extra space between the date and the lock screen notifications,
+         added to keyguard_status_view_bottom_margin so notifications start roughly a third of
+         the way down the screen. Scaled by screen height (values-h*dp). -->
+    <dimen name="reclaimos_keyguard_notification_extra_top_margin">0dp</dimen>
+</resources>

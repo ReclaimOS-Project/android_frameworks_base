@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2026 The ReclaimOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- ReclaimOS lockscreen-v1: see values/reclaimos_lockscreen.xml -->
+    <dimen name="reclaimos_keyguard_notification_extra_top_margin">56dp</dimen>
+</resources>

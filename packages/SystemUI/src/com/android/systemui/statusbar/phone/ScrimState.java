@@ -89,6 +89,14 @@ public enum ScrimState {
             if (mClipQsScrim) {
                 updateScrimColor(mScrimBehind, 1f /* alpha */, mBackgroundColor);
             }
+            // ReclaimOS lockscreen-v1: opaque black primary lock screen. The wallpaper is
+            // left untouched underneath; bouncer and shade states are not changed.
+            if (mReclaimosLockscreen) {
+                mBehindTint = Color.BLACK;
+                mNotifTint = mClipQsScrim ? Color.BLACK : Color.TRANSPARENT;
+                mBehindAlpha = 1f;
+                mNotifAlpha = mClipQsScrim ? 1f : 0f;
+            }
         }
     },
 
@@ -365,10 +373,14 @@ public enum ScrimState {
     long mKeyguardFadingAwayDuration;
     boolean mClipQsScrim;
     int mBackgroundColor;
+    boolean mReclaimosLockscreen;
 
     public void init(ScrimView scrimInFront, ScrimView scrimBehind, DozeParameters dozeParameters,
             DockManager dockManager) {
         mBackgroundColor = scrimBehind.getContext().getColor(R.color.shade_scrim_background_dark);
+        // ReclaimOS lockscreen-v1: read once; used by KEYGUARD.prepare().
+        mReclaimosLockscreen =
+                scrimBehind.getResources().getBoolean(R.bool.config_reclaimosLockscreen);
         mScrimInFront = scrimInFront;
         mScrimBehind = scrimBehind;
 

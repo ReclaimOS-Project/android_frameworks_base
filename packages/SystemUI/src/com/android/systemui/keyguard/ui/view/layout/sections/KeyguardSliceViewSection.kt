@@ -18,14 +18,18 @@
 package com.android.systemui.keyguard.ui.view.layout.sections
 
 import android.content.Context
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.constraintlayout.widget.Barrier
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import com.android.systemui.customization.R as customR
 import com.android.systemui.keyguard.MigrateClocksToBlueprint
 import com.android.systemui.keyguard.shared.model.KeyguardSection
+import com.android.systemui.keyguard.ui.viewmodel.KeyguardClockViewModel
 import com.android.systemui.res.R
 import com.android.systemui.statusbar.lockscreen.LockscreenSmartspaceController
 import javax.inject.Inject
@@ -35,6 +39,7 @@ class KeyguardSliceViewSection
 constructor(
     private val context: Context,
     val smartspaceController: LockscreenSmartspaceController,
+    private val keyguardClockViewModel: KeyguardClockViewModel,
 ) : KeyguardSection() {
     override fun addViews(constraintLayout: ConstraintLayout) {
         if (!MigrateClocksToBlueprint.isEnabled) return
@@ -43,6 +48,11 @@ constructor(
         constraintLayout.findViewById<View?>(R.id.keyguard_slice_view)?.let {
             (it.parent as ViewGroup).removeView(it)
             constraintLayout.addView(it)
+            // ReclaimOS lockscreen-v1: center the date under the centered clock.
+            if (context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+                it.findViewById<TextView?>(R.id.title)?.gravity = Gravity.CENTER_HORIZONTAL
+                it.findViewById<LinearLayout?>(R.id.row)?.gravity = Gravity.CENTER_HORIZONTAL
+            }
         }
     }
 
@@ -67,6 +77,22 @@ constructor(
                 ConstraintSet.PARENT_ID,
                 ConstraintSet.END
             )
+            // ReclaimOS lockscreen-v1: same horizontal span as the centered small clock
+            // (see ClockSection), so the date stays centered beneath it.
+            if (context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+                constrainWidth(R.id.keyguard_slice_view, ConstraintSet.MATCH_CONSTRAINT)
+                connect(
+                    R.id.keyguard_slice_view,
+                    ConstraintSet.END,
+                    if (keyguardClockViewModel.clockShouldBeCentered.value) ConstraintSet.PARENT_ID
+                    else R.id.split_shade_guideline,
+                    ConstraintSet.END,
+                    context.resources.getDimensionPixelSize(customR.dimen.clock_padding_start) +
+                        context.resources.getDimensionPixelSize(
+                            customR.dimen.status_view_margin_horizontal
+                        ),
+                )
+            }
             constrainHeight(R.id.keyguard_slice_view, ConstraintSet.WRAP_CONTENT)
 
             connect(

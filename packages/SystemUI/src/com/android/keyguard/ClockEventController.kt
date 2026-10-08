@@ -21,6 +21,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Resources
+import android.graphics.Color
 import android.os.Trace
 import android.provider.Settings.Global.ZEN_MODE_IMPORTANT_INTERRUPTIONS
 import android.provider.Settings.Global.ZEN_MODE_OFF
@@ -59,6 +60,7 @@ import com.android.systemui.plugins.clocks.ClockController
 import com.android.systemui.plugins.clocks.ClockFaceController
 import com.android.systemui.plugins.clocks.ClockMessageBuffers
 import com.android.systemui.plugins.clocks.ClockTickRate
+import com.android.systemui.plugins.clocks.ThemeConfig
 import com.android.systemui.plugins.clocks.WeatherData
 import com.android.systemui.plugins.clocks.ZenData
 import com.android.systemui.plugins.clocks.ZenData.ZenMode
@@ -258,24 +260,36 @@ constructor(
         return isLightTheme.data == 0
     }
 
+    // ReclaimOS lockscreen-v1: white clock on the solid black lock screen.
+    private fun ThemeConfig.withReclaimosColor(): ThemeConfig =
+        if (resources.getBoolean(SysuiR.bool.config_reclaimosLockscreen)) {
+            copy(seedColor = Color.WHITE)
+        } else {
+            this
+        }
+
     private fun updateColors() {
         val isDarkTheme = isDarkTheme()
         if (regionSamplingEnabled) {
             clock?.smallClock?.run {
                 val isDark = smallRegionSampler?.currentRegionDarkness()?.isDark ?: isDarkTheme
-                events.onThemeChanged(theme.copy(isDarkTheme = isDark))
+                events.onThemeChanged(theme.copy(isDarkTheme = isDark).withReclaimosColor())
             }
             clock?.largeClock?.run {
                 val isDark = largeRegionSampler?.currentRegionDarkness()?.isDark ?: isDarkTheme
-                events.onThemeChanged(theme.copy(isDarkTheme = isDark))
+                events.onThemeChanged(theme.copy(isDarkTheme = isDark).withReclaimosColor())
             }
             return
         }
 
         clock?.run {
             Log.i(TAG, "isThemeDark: $isDarkTheme")
-            smallClock.events.onThemeChanged(smallClock.theme.copy(isDarkTheme = isDarkTheme))
-            largeClock.events.onThemeChanged(largeClock.theme.copy(isDarkTheme = isDarkTheme))
+            smallClock.events.onThemeChanged(
+                smallClock.theme.copy(isDarkTheme = isDarkTheme).withReclaimosColor()
+            )
+            largeClock.events.onThemeChanged(
+                largeClock.theme.copy(isDarkTheme = isDarkTheme).withReclaimosColor()
+            )
         }
     }
 

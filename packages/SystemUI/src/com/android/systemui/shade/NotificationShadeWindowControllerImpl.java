@@ -982,7 +982,10 @@ public class NotificationShadeWindowControllerImpl implements NotificationShadeW
             return;
         }
 
-        final boolean useDarkText = mColorExtractor.getNeutralColors().supportsDarkText();
+        // ReclaimOS lockscreen-v1: light bar icons over the solid black lock screen.
+        final boolean useDarkText =
+                !mContext.getResources().getBoolean(R.bool.config_reclaimosLockscreen)
+                        && mColorExtractor.getNeutralColors().supportsDarkText();
         // Make sure we have the correct navbar/statusbar colors.
         setKeyguardDark(useDarkText);
     }

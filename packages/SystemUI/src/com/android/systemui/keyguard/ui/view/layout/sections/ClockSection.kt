@@ -225,6 +225,20 @@ constructor(
                         customR.dimen.status_view_margin_horizontal
                     ),
             )
+            // ReclaimOS lockscreen-v1: center the (always small) clock horizontally by mirroring
+            // the start margin on the end side.
+            if (context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+                connect(
+                    customR.id.lockscreen_clock_view,
+                    END,
+                    guideline,
+                    END,
+                    context.resources.getDimensionPixelSize(customR.dimen.clock_padding_start) +
+                        context.resources.getDimensionPixelSize(
+                            customR.dimen.status_view_margin_horizontal
+                        ),
+                )
+            }
             val smallClockTopMargin = keyguardClockViewModel.getSmallClockTopMargin()
             create(R.id.small_clock_guideline_top, ConstraintSet.HORIZONTAL_GUIDELINE)
             setGuidelineBegin(R.id.small_clock_guideline_top, smallClockTopMargin)

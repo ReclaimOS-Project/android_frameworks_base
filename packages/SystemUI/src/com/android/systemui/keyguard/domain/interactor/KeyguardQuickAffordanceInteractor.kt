@@ -426,7 +426,9 @@ constructor(
             KeyguardPickerFlag(
                 name = Contract.FlagsTable.FLAG_NAME_CUSTOM_LOCK_SCREEN_QUICK_AFFORDANCES_ENABLED,
                 value =
-                    !isFeatureDisabledByDevicePolicy() &&
+                    // ReclaimOS lockscreen-v1: shortcuts are not offered in the picker.
+                    !appContext.resources.getBoolean(R.bool.config_reclaimosLockscreen) &&
+                        !isFeatureDisabledByDevicePolicy() &&
                         appContext.resources.getBoolean(R.bool.custom_lockscreen_shortcuts_enabled),
             ),
             KeyguardPickerFlag(

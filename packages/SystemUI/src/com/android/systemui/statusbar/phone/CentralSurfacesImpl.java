@@ -2358,7 +2358,11 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
         // Lock wallpaper defines the color of the majority of the views, hence we'll use it
         // to set our default theme.
-        final boolean lockDarkText = mColorExtractor.getNeutralColors().supportsDarkText();
+        // ReclaimOS lockscreen-v1: the lock screen is solid black, so keep light text there
+        // regardless of the wallpaper.
+        final boolean lockDarkText =
+                !mContext.getResources().getBoolean(R.bool.config_reclaimosLockscreen)
+                        && mColorExtractor.getNeutralColors().supportsDarkText();
         final int themeResId = lockDarkText ? R.style.Theme_SystemUI_LightWallpaper
                 : R.style.Theme_SystemUI;
         if (mContext.getThemeResId() != themeResId) {
