@@ -534,6 +534,17 @@ public class TaskbarDelegate implements CommandQueue.Callbacks,
     }
 
     @Override
+    public void onConnectionChanged(boolean isConnected) {
+        // ReclaimOS navigation-v1: the navigation button tint is only sent when it changes, and a
+        // restarted launcher starts with light buttons, so send it the current tint.
+        if (isConnected && mInitialized
+                && mLightBarTransitionsController.supportsIconTintForNavMode(mNavigationMode)) {
+            mOverviewProxyService.onNavButtonsDarkIntensityChanged(
+                    mLightBarTransitionsController.getCurrentDarkIntensity());
+        }
+    }
+
+    @Override
     public void onTaskbarAutohideSuspend(boolean suspend) {
         if (suspend) {
             mAutoHideController.suspendAutoHide();

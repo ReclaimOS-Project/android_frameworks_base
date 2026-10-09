@@ -134,7 +134,16 @@ public class LightBarControllerImpl implements
     private final String mDumpableName;
 
     private final NavigationModeController.ModeChangedListener mNavigationModeListener =
-            (mode) -> mNavigationMode = mode;
+            (mode) -> {
+                mNavigationMode = mode;
+                // ReclaimOS navigation-v1: the navigation icon tint is not updated in gesture
+                // mode, so it can be stale when the buttons return. Apply the current one without
+                // animation, which dispatches it even when the stored target already matches.
+                if (mNavigationBarController != null
+                        && mNavigationBarController.supportsIconTintForNavMode(mode)) {
+                    mNavigationBarController.setIconsDark(mNavigationLight, false /* animate */);
+                }
+            };
 
     @AssistedInject
     public LightBarControllerImpl(
