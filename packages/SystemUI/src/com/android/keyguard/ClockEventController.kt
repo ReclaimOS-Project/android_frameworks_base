@@ -21,7 +21,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Resources
-import android.graphics.Color
 import android.os.Trace
 import android.provider.Settings.Global.ZEN_MODE_IMPORTANT_INTERRUPTIONS
 import android.provider.Settings.Global.ZEN_MODE_OFF
@@ -260,10 +259,14 @@ constructor(
         return isLightTheme.data == 0
     }
 
-    // ReclaimOS lockscreen-v1: white clock on the solid black lock screen.
+    // ReclaimOS lockscreen-v1: the clock in the lock screen's primary text color, which follows
+    // the system light/dark theme (navigation-v1).
     private fun ThemeConfig.withReclaimosColor(): ThemeConfig =
         if (resources.getBoolean(SysuiR.bool.config_reclaimosLockscreen)) {
-            copy(seedColor = Color.WHITE)
+            copy(
+                seedColor =
+                    resources.getColor(SysuiR.color.reclaimos_lockscreen_text_primary, null)
+            )
         } else {
             this
         }

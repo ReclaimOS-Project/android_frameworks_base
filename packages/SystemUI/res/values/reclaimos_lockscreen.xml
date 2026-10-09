@@ -5,10 +5,23 @@
 -->
 <resources>
     <!-- ReclaimOS lockscreen-v1: kill switch for the ReclaimOS primary lock screen presentation
-         (solid black background, light text, always-small centered white clock, centered date,
-         lower notifications, no lock screen shortcuts). Set to false to restore the stock
-         presentation. -->
+         (opaque background and text colors that follow the system light/dark theme,
+         always-small centered clock, centered date, lower notifications, no lock screen
+         shortcuts). Set to false to restore the stock presentation. -->
     <bool name="config_reclaimosLockscreen">true</bool>
+
+    <!-- ReclaimOS navigation-v1: lock screen colors, the Setup Wizard's palette tokens. They
+         follow the system light/dark theme (values-night). -->
+    <color name="reclaimos_lockscreen_background">@android:color/system_neutral1_50</color>
+    <color name="reclaimos_lockscreen_text_primary">@android:color/system_neutral1_900</color>
+    <color name="reclaimos_lockscreen_text_secondary">@android:color/system_neutral2_700</color>
+
+    <!-- ReclaimOS navigation-v1: applied over Theme.SystemUI or Theme.SystemUI.LightWallpaper so
+         the lock screen text uses the colors above. -->
+    <style name="ThemeOverlay.SystemUI.ReclaimOSLockscreen" parent="">
+        <item name="wallpaperTextColor">@color/reclaimos_lockscreen_text_primary</item>
+        <item name="wallpaperTextColorSecondary">@color/reclaimos_lockscreen_text_secondary</item>
+    </style>
 
     <!-- ReclaimOS lockscreen-v1: extra space between the date and the lock screen notifications,
          added to keyguard_status_view_bottom_margin so notifications start roughly a third of

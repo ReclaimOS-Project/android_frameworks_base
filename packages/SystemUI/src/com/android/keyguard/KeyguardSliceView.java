@@ -278,6 +278,11 @@ public class KeyguardSliceView extends LinearLayout {
                 ((KeyguardSliceTextView) child).onOverlayChanged();
             }
         }
+        // ReclaimOS navigation-v1: the lock screen text color follows the system light/dark
+        // theme, so read it again.
+        if (mContext.getResources().getBoolean(R.bool.config_reclaimosLockscreen)) {
+            setTextColor(Utils.getColorAttrDefaultColor(mContext, R.attr.wallpaperTextColor));
+        }
     }
     public void dump(PrintWriter pw, String[] args) {
         pw.println("KeyguardSliceView:");

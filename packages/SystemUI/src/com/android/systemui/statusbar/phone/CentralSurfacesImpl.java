@@ -387,6 +387,9 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
      */
     private boolean mShouldDelayWakeUpAnimation = false;
 
+    /** ReclaimOS lockscreen-v1: whether the ReclaimOS lock screen colors are in the theme. */
+    private boolean mReclaimosLockscreenThemeApplied;
+
     /**
      * Whether we should delay the AOD->Lockscreen animation.
      * If false, the animation will start in onStartedWakingUp().
@@ -2358,17 +2361,32 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
         // Lock wallpaper defines the color of the majority of the views, hence we'll use it
         // to set our default theme.
-        // ReclaimOS lockscreen-v1: the lock screen is solid black, so keep light text there
-        // regardless of the wallpaper.
-        final boolean lockDarkText =
-                !mContext.getResources().getBoolean(R.bool.config_reclaimosLockscreen)
-                        && mColorExtractor.getNeutralColors().supportsDarkText();
+        // ReclaimOS lockscreen-v1: the lock screen has an opaque background in the system
+        // light/dark theme's colors (navigation-v1), so the text follows that theme instead of
+        // the wallpaper, in the ReclaimOS lock screen colors.
+        final boolean reclaimosLockscreen =
+                mContext.getResources().getBoolean(R.bool.config_reclaimosLockscreen);
+        final boolean lockDarkText = reclaimosLockscreen
+                ? !isReclaimosNightMode()
+                : mColorExtractor.getNeutralColors().supportsDarkText();
         final int themeResId = lockDarkText ? R.style.Theme_SystemUI_LightWallpaper
                 : R.style.Theme_SystemUI;
-        if (mContext.getThemeResId() != themeResId) {
+        if (mContext.getThemeResId() != themeResId
+                || reclaimosLockscreen && !mReclaimosLockscreenThemeApplied) {
             mContext.setTheme(themeResId);
+            if (reclaimosLockscreen) {
+                // Re-applied after every theme change, which resets these attributes.
+                mContext.getTheme().applyStyle(
+                        R.style.ThemeOverlay_SystemUI_ReclaimOSLockscreen, true /* force */);
+                mReclaimosLockscreenThemeApplied = true;
+            }
             mConfigurationController.notifyThemeChanged();
         }
+    }
+
+    private boolean isReclaimosNightMode() {
+        return (mContext.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
     }
 
     public boolean shouldDelayWakeUpAnimation() {
@@ -3118,6 +3136,10 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         public void onUiModeChanged() {
             if (mBrightnessMirrorController != null) {
                 mBrightnessMirrorController.onUiModeChanged();
+            }
+            // ReclaimOS navigation-v1: the lock screen theme follows the system light/dark theme.
+            if (mContext.getResources().getBoolean(R.bool.config_reclaimosLockscreen)) {
+                updateTheme();
             }
         }
     };

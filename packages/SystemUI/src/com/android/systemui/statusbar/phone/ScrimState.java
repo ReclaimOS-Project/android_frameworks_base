@@ -89,11 +89,14 @@ public enum ScrimState {
             if (mClipQsScrim) {
                 updateScrimColor(mScrimBehind, 1f /* alpha */, mBackgroundColor);
             }
-            // ReclaimOS lockscreen-v1: opaque black primary lock screen. The wallpaper is
-            // left untouched underneath; bouncer and shade states are not changed.
+            // ReclaimOS lockscreen-v1: opaque primary lock screen in the system light/dark
+            // theme's background color (navigation-v1). The wallpaper is left untouched
+            // underneath; bouncer and shade states are not changed.
             if (mReclaimosLockscreen) {
-                mBehindTint = Color.BLACK;
-                mNotifTint = mClipQsScrim ? Color.BLACK : Color.TRANSPARENT;
+                final int background = mScrimBehind.getContext().getColor(
+                        R.color.reclaimos_lockscreen_background);
+                mBehindTint = background;
+                mNotifTint = mClipQsScrim ? background : Color.TRANSPARENT;
                 mBehindAlpha = 1f;
                 mNotifAlpha = mClipQsScrim ? 1f : 0f;
             }

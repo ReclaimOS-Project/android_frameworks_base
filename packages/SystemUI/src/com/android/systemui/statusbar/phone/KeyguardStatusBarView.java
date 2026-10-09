@@ -459,7 +459,12 @@ public class KeyguardStatusBarView extends RelativeLayout {
         @ColorInt int contrastColor = luminance < 0.5
                 ? DarkIconDispatcherImpl.DEFAULT_ICON_TINT
                 : DarkIconDispatcherImpl.DEFAULT_INVERSE_ICON_TINT;
-        float intensity = textColor == Color.WHITE ? 0 : 1;
+        // ReclaimOS navigation-v1: the lock screen text color follows the system light/dark
+        // theme and is never pure white, so take the darkness from its luminance, as the icon
+        // color does.
+        float intensity = mContext.getResources().getBoolean(R.bool.config_reclaimosLockscreen)
+                ? (luminance < 0.5 ? 1 : 0)
+                : textColor == Color.WHITE ? 0 : 1;
         mCarrierLabel.setTextColor(iconColor);
 
         TextView userSwitcherName = mUserSwitcherContainer.findViewById(R.id.current_user_name);

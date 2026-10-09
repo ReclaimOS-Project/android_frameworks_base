@@ -1552,6 +1552,12 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
 
     private void onThemeChanged() {
         updateThemeColors();
+        // ReclaimOS navigation-v1: the ReclaimOS lock screen background follows the system
+        // light/dark theme and is read when KEYGUARD is prepared, so prepare it again.
+        if (mState == ScrimState.KEYGUARD && mState.mReclaimosLockscreen) {
+            mState.prepare(mState);
+            applyAndDispatchState();
+        }
         scheduleUpdate();
     }
 
