@@ -69,6 +69,7 @@ constructor(
     dismissibilityCoordinator: DismissibilityCoordinator,
     statsLoggerCoordinator: NotificationStatsLoggerCoordinator,
     bundleCoordinator: BundleCoordinator,
+    reclaimosLockscreenCoordinator: ReclaimosLockscreenCoordinator,
 ) : NotifCoordinators {
 
     private val mCoreCoordinators: MutableList<CoreCoordinator> = ArrayList()
@@ -110,12 +111,19 @@ constructor(
         mCoordinators.add(preparationCoordinator)
         mCoordinators.add(remoteInputCoordinator)
         mCoordinators.add(dismissibilityCoordinator)
+        // ReclaimOS notifications-v1
+        mCoordinators.add(reclaimosLockscreenCoordinator)
 
         if (NotificationsLiveDataStoreRefactor.isEnabled) {
             mCoordinators.add(statsLoggerCoordinator)
         }
 
         // Manually add Ordered Sections
+        // ReclaimOS notifications-v1: the lock screen sections come first. They hold every
+        // notification while the lock screen is showing, and none otherwise.
+        mOrderedSections.add(reclaimosLockscreenCoordinator.messagesSectioner) // Messages
+        mOrderedSections.add(reclaimosLockscreenCoordinator.callsSectioner) // Phone calls
+        mOrderedSections.add(reclaimosLockscreenCoordinator.notificationsSectioner) // Notifs
         if (NotificationMinimalism.isEnabled) {
             mOrderedSections.add(lockScreenMinimalismCoordinator.topOngoingSectioner) // Top Ongoing
         }

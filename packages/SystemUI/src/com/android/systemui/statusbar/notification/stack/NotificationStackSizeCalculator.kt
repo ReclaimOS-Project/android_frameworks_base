@@ -29,6 +29,7 @@ import com.android.systemui.statusbar.LockscreenShadeTransitionController
 import com.android.systemui.statusbar.StatusBarState.KEYGUARD
 import com.android.systemui.statusbar.SysuiStatusBarStateController
 import com.android.systemui.statusbar.notification.domain.interactor.SeenNotificationsInteractor
+import com.android.systemui.statusbar.notification.reclaimos.ReclaimosSectionHeaderView
 import com.android.systemui.statusbar.notification.row.ExpandableNotificationRow
 import com.android.systemui.statusbar.notification.row.ExpandableView
 import com.android.systemui.statusbar.notification.shared.NotificationMinimalism
@@ -387,6 +388,11 @@ constructor(
             val space = getSpaceNeeded(currentNotification, i, previous, stack, onLockscreen)
             notifications += space.whenEnoughSpace
             notifsWithCollapsedHun += space.whenSavingSpace
+            if (onLockscreen) {
+                val headingSpace = reclaimosHeadingSpace(stack, currentNotification)
+                notifications += headingSpace
+                notifsWithCollapsedHun += headingSpace
+            }
 
             previous = currentNotification
 
@@ -425,6 +431,27 @@ constructor(
                 )
             )
         }
+    }
+
+    /**
+     * ReclaimOS notifications-v1: the space taken by the lock screen heading right above [view],
+     * if there is one. Headings are not counted as notifications here, so each one is counted
+     * with the first notification of its section: both fit, or both go into the shelf.
+     */
+    private fun reclaimosHeadingSpace(
+        stack: NotificationStackScrollLayout,
+        view: ExpandableView,
+    ): Float {
+        for (i in stack.indexOfChild(view) - 1 downTo 0) {
+            val previous = stack.getChildAt(i)
+            if (previous.visibility == GONE) continue
+            return if (previous is ReclaimosSectionHeaderView) {
+                previous.intrinsicHeight + dividerHeight
+            } else {
+                0f
+            }
+        }
+        return 0f
     }
 
     fun updateResources() {

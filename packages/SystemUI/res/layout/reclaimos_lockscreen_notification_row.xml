@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2026 The ReclaimOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- ReclaimOS notifications-v1: the text-only lock screen presentation of a notification row:
+     title and time on one line, a preview of up to two lines below, and a bottom divider.
+     ReclaimosLockscreenRowView applies the sizes and colors. -->
+<com.android.systemui.statusbar.notification.reclaimos.ReclaimosLockscreenRowView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/reclaimos_lockscreen_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/reclaimos_lockscreen_row_side_padding"
+    android:paddingEnd="@dimen/reclaimos_lockscreen_row_side_padding"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/reclaimos_lockscreen_row_padding_top"
+        android:orientation="horizontal"
+        android:baselineAligned="true">
+
+        <TextView
+            android:id="@+id/reclaimos_row_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@*android:string/config_headlineFontFamilyMedium"
+            android:textSize="@dimen/reclaimos_lockscreen_row_title_text_size"
+            android:textColor="@color/reclaimos_lockscreen_text_primary"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textDirection="locale" />
+
+        <TextView
+            android:id="@+id/reclaimos_row_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/reclaimos_lockscreen_row_time_margin_start"
+            android:fontFamily="@*android:string/config_bodyFontFamily"
+            android:textSize="@dimen/reclaimos_lockscreen_row_time_text_size"
+            android:textColor="@color/reclaimos_lockscreen_text_secondary"
+            android:singleLine="true" />
+
+        <!-- Instead of the time, for notifications that show a running timer. -->
+        <Chronometer
+            android:id="@+id/reclaimos_row_chronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/reclaimos_lockscreen_row_time_margin_start"
+            android:fontFamily="@*android:string/config_bodyFontFamily"
+            android:textSize="@dimen/reclaimos_lockscreen_row_time_text_size"
+            android:textColor="@color/reclaimos_lockscreen_text_secondary"
+            android:singleLine="true"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/reclaimos_row_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/reclaimos_lockscreen_row_preview_margin_top"
+        android:fontFamily="@*android:string/config_bodyFontFamily"
+        android:textSize="@dimen/reclaimos_lockscreen_row_preview_text_size"
+        android:textColor="@color/reclaimos_lockscreen_text_secondary"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textDirection="locale" />
+
+    <!-- Kept separate from the preview so rows without a preview keep the same bottom space. -->
+    <Space
+        android:id="@+id/reclaimos_row_bottom_space"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/reclaimos_lockscreen_row_padding_bottom" />
+
+    <View
+        android:id="@+id/reclaimos_row_divider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/reclaimos_lockscreen_divider_height"
+        android:background="@color/reclaimos_lockscreen_divider"
+        android:importantForAccessibility="no" />
+</com.android.systemui.statusbar.notification.reclaimos.ReclaimosLockscreenRowView>

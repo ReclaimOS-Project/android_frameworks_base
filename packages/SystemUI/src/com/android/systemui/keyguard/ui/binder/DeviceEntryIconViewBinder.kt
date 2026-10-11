@@ -71,6 +71,7 @@ object DeviceEntryIconViewBinder {
         val longPressHandlingView = view.longPressHandlingView
         val fgIconView = view.iconView
         val bgView = view.bgView
+        val reclaimosLockscreen = view.resources.getBoolean(R.bool.config_reclaimosLockscreen)
         longPressHandlingView.listener =
             object : LongPressHandlingView.Listener {
                 override fun onLongPressDetected(
@@ -201,6 +202,14 @@ object DeviceEntryIconViewBinder {
                                 viewModel.padding,
                                 viewModel.padding,
                             )
+                            // ReclaimOS notifications-v1: don't draw the closed padlock. The
+                            // icon keeps its place, description, clicks and long-press, and
+                            // the open padlock and fingerprint icons still show.
+                            if (reclaimosLockscreen) {
+                                fgIconView.imageAlpha =
+                                    if (viewModel.type == DeviceEntryIconView.IconType.LOCK) 0
+                                    else 255
+                            }
                             // Set image state at the end after updating other view state. This
                             // method forces the ImageView to recompute the bounds of the drawable.
                             fgIconView.setImageState(

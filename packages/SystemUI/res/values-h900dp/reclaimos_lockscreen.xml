@@ -4,6 +4,8 @@
      SPDX-License-Identifier: Apache-2.0
 -->
 <resources>
-    <!-- ReclaimOS lockscreen-v1: see values/reclaimos_lockscreen.xml -->
-    <dimen name="reclaimos_keyguard_notification_extra_top_margin">88dp</dimen>
+    <!-- ReclaimOS lockscreen-v1: see values/reclaimos_lockscreen.xml. Since notifications-v1 the
+         lock screen notifications follow the date at the same distance on every screen
+         height, so this matches the default. -->
+    <dimen name="reclaimos_keyguard_notification_extra_top_margin">-8dp</dimen>
 </resources>

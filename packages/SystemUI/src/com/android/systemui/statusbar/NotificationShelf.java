@@ -26,12 +26,14 @@ import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.IndentingPrintWriter;
 import android.util.MathUtils;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 import android.view.animation.PathInterpolator;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -97,6 +99,11 @@ public class NotificationShelf extends ActivatableNotificationView {
     private boolean mCanInteract;
     private NotificationStackScrollLayout mHostLayout;
     private NotificationRoundnessManager mRoundnessManager;
+    // ReclaimOS notifications-v1: on the lock screen the shelf shows "+N more" instead of icons.
+    private boolean mReclaimosLockscreen;
+    private TextView mReclaimosMore;
+    private boolean mReclaimosMoreShowing;
+    private int mReclaimosMoreCount = -1;
 
     public NotificationShelf(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -113,6 +120,7 @@ public class NotificationShelf extends ActivatableNotificationView {
     public void onFinishInflate() {
         super.onFinishInflate();
         mShelfIcons = findViewById(R.id.content);
+        mReclaimosMore = findViewById(R.id.reclaimos_shelf_more);
         mShelfIcons.setClipChildren(false);
         mShelfIcons.setClipToPadding(false);
 
@@ -156,6 +164,15 @@ public class NotificationShelf extends ActivatableNotificationView {
         if (!mShowNotificationShelf) {
             setVisibility(GONE);
         }
+
+        mReclaimosLockscreen = res.getBoolean(R.bool.config_reclaimosLockscreen);
+        // Follow the light/dark theme, font scale and the short/tall screen sizes.
+        final int morePadding =
+                res.getDimensionPixelSize(R.dimen.reclaimos_lockscreen_row_side_padding);
+        mReclaimosMore.setPaddingRelative(morePadding, 0, morePadding, 0);
+        mReclaimosMore.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                res.getDimension(R.dimen.reclaimos_lockscreen_more_text_size));
+        mReclaimosMore.setTextColor(mContext.getColor(R.color.reclaimos_lockscreen_text_secondary));
     }
 
     @Override
@@ -189,6 +206,7 @@ public class NotificationShelf extends ActivatableNotificationView {
                 + " animationsEnabled=" + mAnimationsEnabled
                 + " showNotificationShelf=" + mShowNotificationShelf
                 + " indexOfFirstViewInShelf=" + mIndexOfFirstViewInShelf
+                + " reclaimosMoreCount=" + (mReclaimosMoreShowing ? mReclaimosMoreCount : -1)
                 + ')';
     }
 
@@ -378,6 +396,7 @@ public class NotificationShelf extends ActivatableNotificationView {
                 && !mAmbientState.isPanelTracking();
         int baseZHeight = mAmbientState.getBaseZHeight();
         int clipTopAmount = 0;
+        int rowsInShelf = 0;
 
         for (int i = 0; i < getHostLayoutChildCount(); i++) {
             ExpandableView child = getHostLayoutChildAt(i);
@@ -406,6 +425,9 @@ public class NotificationShelf extends ActivatableNotificationView {
             // and icon state.
             if (child instanceof ExpandableNotificationRow expandableRow) {
                 numViewsInShelf += inShelfAmount;
+                if (expandableRow.getViewState().inShelf) {
+                    rowsInShelf++;
+                }
                 int ownColorUntinted = expandableRow.getBackgroundColorWithoutTint();
                 if (viewStart >= shelfStart && mNotGoneIndex == -1) {
                     mNotGoneIndex = notGoneIndex;
@@ -451,7 +473,12 @@ public class NotificationShelf extends ActivatableNotificationView {
         final float fractionToShade = Interpolators.STANDARD.getInterpolation(
                 mAmbientState.getFractionToShade());
 
-        if (mAmbientState.isOnKeyguard()) {
+        final boolean reclaimosMore = mReclaimosLockscreen && mAmbientState.isOnKeyguard();
+        updateReclaimosMore(reclaimosMore, rowsInShelf);
+        if (reclaimosMore) {
+            // The "+N more" line lines up with the notification text, across the full width.
+            setActualWidth(getWidth());
+        } else if (mAmbientState.isOnKeyguard()) {
             float numViews = MathUtils.min(numViewsInShelf, mMaxIconsOnLockscreen + 1);
             float shortestWidth = mShelfIcons.calculateWidthFor(numViews);
             float actualWidth = MathUtils.lerp(shortestWidth, getWidth(), fractionToShade);
@@ -472,7 +499,8 @@ public class NotificationShelf extends ActivatableNotificationView {
             }
             updateContinuousClipping(row);
         }
-        boolean hideBackground = isHidden;
+        // ReclaimOS: no background, and so no outline or shadow, behind "+N more".
+        boolean hideBackground = isHidden || mReclaimosMoreShowing;
         setHideBackground(hideBackground);
         if (mNotGoneIndex == -1) {
             mNotGoneIndex = notGoneIndex;
@@ -879,6 +907,38 @@ public class NotificationShelf extends ActivatableNotificationView {
     @Override
     protected boolean needsOutline() {
         return !mHideBackground && super.needsOutline();
+    }
+
+    @Override
+    protected boolean hideBackground() {
+        return mReclaimosMoreShowing || super.hideBackground();
+    }
+
+    /**
+     * ReclaimOS notifications-v1: on the lock screen, shows how many notifications did not fit
+     * ("+N more") instead of their icons. Tapping the shelf still opens the notifications.
+     *
+     * @param onLockscreen whether the ReclaimOS lock screen is showing
+     * @param count        the number of notifications in the shelf
+     */
+    private void updateReclaimosMore(boolean onLockscreen, int count) {
+        if (onLockscreen != mReclaimosMoreShowing) {
+            mReclaimosMoreShowing = onLockscreen;
+            mShelfIcons.setVisibility(onLockscreen ? INVISIBLE : VISIBLE);
+            mReclaimosMore.setVisibility(onLockscreen ? VISIBLE : GONE);
+            updateBackground();
+            if (!onLockscreen) {
+                setContentDescription(null);
+                mReclaimosMoreCount = -1;
+            }
+        }
+        if (onLockscreen && count != mReclaimosMoreCount) {
+            mReclaimosMoreCount = count;
+            Resources res = getResources();
+            mReclaimosMore.setText(res.getString(R.string.reclaimos_lockscreen_more, count));
+            setContentDescription(res.getQuantityString(
+                    R.plurals.reclaimos_lockscreen_more_description, count, count));
+        }
     }
 
 

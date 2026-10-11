@@ -36,6 +36,21 @@
         android:paddingEnd="@dimen/shelf_icon_container_padding"
         android:gravity="center_vertical" />
 
+    <!-- ReclaimOS notifications-v1: "+N more" in place of the icons on the lock screen.
+         NotificationShelf applies the size and color. -->
+    <TextView
+        android:id="@+id/reclaimos_shelf_more"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/reclaimos_lockscreen_row_side_padding"
+        android:paddingEnd="@dimen/reclaimos_lockscreen_row_side_padding"
+        android:gravity="center_vertical|start"
+        android:fontFamily="@*android:string/config_bodyFontFamily"
+        android:singleLine="true"
+        android:textDirection="locale"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
     <com.android.systemui.statusbar.notification.FakeShadowView
         android:id="@+id/fake_shadow"
         android:layout_width="match_parent"

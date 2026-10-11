@@ -33,6 +33,7 @@ import android.os.Trace;
 import android.text.TextUtils;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.Animation;
@@ -436,11 +437,24 @@ public class KeyguardSliceView extends LinearLayout {
         }
 
         public void onDensityOrFontScaleChanged() {
+            applyReclaimosTextSize();
             updatePadding();
         }
 
         public void onOverlayChanged() {
             setTextAppearance(sStyleId);
+            applyReclaimosTextSize();
+        }
+
+        /** ReclaimOS notifications-v1: a larger date (and any item beside it). */
+        private void applyReclaimosTextSize() {
+            Resources res = getContext().getResources();
+            if (!res.getBoolean(R.bool.config_reclaimosLockscreen)) {
+                return;
+            }
+            setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                    res.getDimension(R.dimen.reclaimos_lockscreen_date_text_size));
+            setLineHeight(res.getDimensionPixelSize(R.dimen.reclaimos_lockscreen_date_line_height));
         }
 
         @Override

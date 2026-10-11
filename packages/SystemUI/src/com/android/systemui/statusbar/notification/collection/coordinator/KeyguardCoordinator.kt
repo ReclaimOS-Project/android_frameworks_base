@@ -16,7 +16,10 @@
 
 package com.android.systemui.statusbar.notification.collection.coordinator
 
+import android.content.res.Resources
+import com.android.systemui.dagger.qualifiers.Main
 import com.android.systemui.plugins.statusbar.StatusBarStateController
+import com.android.systemui.res.R
 import com.android.systemui.statusbar.StatusBarState
 import com.android.systemui.statusbar.notification.collection.NotifPipeline
 import com.android.systemui.statusbar.notification.collection.NotificationEntry
@@ -38,7 +41,11 @@ constructor(
     private val keyguardNotificationVisibilityProvider: KeyguardNotificationVisibilityProvider,
     private val sectionHeaderVisibilityProvider: SectionHeaderVisibilityProvider,
     private val statusBarStateController: StatusBarStateController,
+    @Main resources: Resources,
 ) : Coordinator {
+
+    // ReclaimOS notifications-v1: the lock screen shows the ReclaimOS section headings.
+    private val reclaimosLockscreen = resources.getBoolean(R.bool.config_reclaimosLockscreen)
 
     override fun attach(pipeline: NotifPipeline) {
         setupInvalidateNotifListCallbacks()
@@ -66,7 +73,14 @@ constructor(
     private fun updateSectionHeadersVisibility() {
         val onKeyguard = statusBarStateController.state == StatusBarState.KEYGUARD
         val neverShowSections = sectionHeaderVisibilityProvider.neverShowSectionHeaders
-        val showSections = !onKeyguard && !neverShowSections
+        val showSections =
+            if (onKeyguard) {
+                // ReclaimOS notifications-v1: only ReclaimosLockscreenCoordinator's sections hold
+                // notifications on the lock screen, so these are the only headers shown there.
+                reclaimosLockscreen
+            } else {
+                !neverShowSections
+            }
         sectionHeaderVisibilityProvider.sectionHeadersVisible = showSections
     }
 

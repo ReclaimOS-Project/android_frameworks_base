@@ -98,6 +98,8 @@ public class VisualStabilityCoordinator implements Coordinator, Dumpable {
     private boolean mIsSuppressingGroupChange = false;
     private final Set<String> mEntriesWithSuppressedSectionChange = new HashSet<>();
     private boolean mIsSuppressingEntryReorder = false;
+    // ReclaimOS notifications-v1: set by allowEveryChangeForNextRun, cleared once a list is built.
+    private boolean mAllowEveryChangeOnce = false;
 
     // key: notification key that can temporarily change its section
     // value: runnable that when run removes its associated RemoveOverrideSuppressionRunnable
@@ -178,6 +180,19 @@ public class VisualStabilityCoordinator implements Coordinator, Dumpable {
         }
 
         pipeline.setVisualStabilityManager(mNotifStabilityManager);
+        // ReclaimOS notifications-v1: the one-shot allowance covers exactly one built list.
+        pipeline.addOnBeforeRenderListListener(entries -> mAllowEveryChangeOnce = false);
+    }
+
+    /**
+     * ReclaimOS notifications-v1: lets the next pipeline run regroup, re-section and reorder every
+     * notification, then invalidates the list. Used when the lock screen starts or stops showing
+     * its own sections, which would otherwise wait until the screen turns off or the panel
+     * closes. This only affects layout; filtering and sensitivity are unchanged.
+     */
+    public void allowEveryChangeForNextRun(@NonNull String reason) {
+        mAllowEveryChangeOnce = true;
+        mNotifStabilityManager.invalidateList(reason);
     }
 
     final KeyguardStateController.Callback mKeyguardFadeAwayAnimationCallback =
@@ -223,14 +238,16 @@ public class VisualStabilityCoordinator implements Coordinator, Dumpable {
                 @Override
                 public boolean isGroupChangeAllowed(@NonNull NotificationEntry entry) {
                     final boolean isGroupChangeAllowedForEntry =
-                            mReorderingAllowed || canMoveForHeadsUp(entry);
+                            mReorderingAllowed || mAllowEveryChangeOnce
+                                    || canMoveForHeadsUp(entry);
                     mIsSuppressingGroupChange |= !isGroupChangeAllowedForEntry;
                     return isGroupChangeAllowedForEntry;
                 }
 
                 @Override
                 public boolean isGroupPruneAllowed(@NonNull GroupEntry entry) {
-                    final boolean isGroupPruneAllowedForEntry = mReorderingAllowed;
+                    final boolean isGroupPruneAllowedForEntry =
+                            mReorderingAllowed || mAllowEveryChangeOnce;
                     mIsSuppressingGroupChange |= !isGroupPruneAllowedForEntry;
                     return isGroupPruneAllowedForEntry;
                 }
@@ -239,6 +256,7 @@ public class VisualStabilityCoordinator implements Coordinator, Dumpable {
                 public boolean isSectionChangeAllowed(@NonNull NotificationEntry entry) {
                     final boolean isSectionChangeAllowedForEntry =
                             mReorderingAllowed
+                                    || mAllowEveryChangeOnce
                                     || canMoveForHeadsUp(entry)
                                     || mEntriesThatCanChangeSection.containsKey(entry.getKey());
                     if (!isSectionChangeAllowedForEntry) {
@@ -249,12 +267,13 @@ public class VisualStabilityCoordinator implements Coordinator, Dumpable {
 
                 @Override
                 public boolean isEntryReorderingAllowed(@NonNull ListEntry entry) {
-                    return mReorderingAllowed || canMoveForHeadsUp(entry.getRepresentativeEntry());
+                    return mReorderingAllowed || mAllowEveryChangeOnce
+                            || canMoveForHeadsUp(entry.getRepresentativeEntry());
                 }
 
                 @Override
                 public boolean isEveryChangeAllowed() {
-                    return mReorderingAllowed;
+                    return mReorderingAllowed || mAllowEveryChangeOnce;
                 }
 
                 @Override
@@ -385,6 +404,7 @@ public class VisualStabilityCoordinator implements Coordinator, Dumpable {
             pw.println("  lockscreenInGoneTransition: " + mLockscreenInGoneTransition);
         }
         pw.println("reorderingAllowed: " + mReorderingAllowed);
+        pw.println("  allowEveryChangeOnce: " + mAllowEveryChangeOnce);
         pw.println("  sleepy: " + mSleepy);
         pw.println("  fullyDozed: " + mFullyDozed);
         pw.println("  panelExpanded: " + mPanelExpanded);

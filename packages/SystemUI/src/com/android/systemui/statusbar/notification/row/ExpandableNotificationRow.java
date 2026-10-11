@@ -23,6 +23,9 @@ import static android.service.notification.NotificationListenerService.REASON_CA
 import static com.android.systemui.flags.Flags.ENABLE_NOTIFICATIONS_SIMULATE_SLOW_MEASURE;
 import static com.android.systemui.statusbar.notification.collection.NotificationEntry.DismissState.PARENT_DISMISSED;
 import static com.android.systemui.statusbar.notification.row.NotificationContentView.VISIBLE_TYPE_HEADSUP;
+import static com.android.systemui.statusbar.notification.stack.NotificationPriorityBucketKt.BUCKET_RECLAIMOS_CALLS;
+import static com.android.systemui.statusbar.notification.stack.NotificationPriorityBucketKt.BUCKET_RECLAIMOS_MESSAGES;
+import static com.android.systemui.statusbar.notification.stack.NotificationPriorityBucketKt.BUCKET_RECLAIMOS_NOTIFICATIONS;
 import static com.android.systemui.statusbar.policy.RemoteInputView.FOCUS_ANIMATION_MIN_SCALE;
 import static com.android.systemui.util.ColorUtilKt.hexColorString;
 
@@ -106,6 +109,9 @@ import com.android.systemui.statusbar.notification.headsup.HeadsUpManager;
 import com.android.systemui.statusbar.notification.headsup.PinnedStatus;
 import com.android.systemui.statusbar.notification.logging.NotificationCounters;
 import com.android.systemui.statusbar.notification.people.PeopleNotificationIdentifier;
+import com.android.systemui.statusbar.notification.reclaimos.ReclaimosLockscreenContentExtractor;
+import com.android.systemui.statusbar.notification.reclaimos.ReclaimosLockscreenRowView;
+import com.android.systemui.statusbar.notification.reclaimos.ReclaimosNotificationClassifier;
 import com.android.systemui.statusbar.notification.row.NotificationRowContentBinder.InflationFlag;
 import com.android.systemui.statusbar.notification.row.shared.AsyncGroupHeaderViewInflation;
 import com.android.systemui.statusbar.notification.row.shared.LockscreenOtpRedaction;
@@ -408,6 +414,19 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
     private OnClickListener mBubbleClickListener;
     private OnDragSuccessListener mOnDragSuccessListener;
     private boolean mHeadsupDisappearRunning;
+
+    // ReclaimOS notifications-v1: on the lock screen the row shows a text row (title, time and a
+    // short preview) instead of its notification views. See updateReclaimosTextMode().
+    private final boolean mReclaimosLockscreen;
+    @Nullable
+    private ReclaimosLockscreenRowView mReclaimosRow;
+    private boolean mReclaimosTextMode;
+    private boolean mReclaimosDividerVisible = true;
+    private boolean mReclaimosContentDirty = true;
+    private boolean mReclaimosBoundRedacted;
+    private int mReclaimosBoundBucket = -1;
+    private int mReclaimosReportedHeight;
+
     private View mChildAfterViewWhenDismissed;
     private View mGroupParentWhenDismissed;
     private boolean mAboveShelf;
@@ -649,6 +668,8 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
             mUpdateSelfBackgroundOnUpdate = false;
             updateBackgroundColorsOfSelf();
         }
+        mReclaimosContentDirty = true;
+        updateReclaimosTextMode();
         Trace.endSection();
     }
 
@@ -1122,7 +1143,12 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         if (ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
             mFalsingManager.isFalseTap(FalsingManager.MODERATE_PENALTY);
         }
-        return super.onInterceptTouchEvent(ev);
+        if (super.onInterceptTouchEvent(ev)) {
+            return true;
+        }
+        // ReclaimOS notifications-v1: the notification views are not drawn under the text row, so
+        // their buttons must not get touches. A tap opens the notification, as on the stock row.
+        return mReclaimosTextMode;
     }
 
     @Override
@@ -1239,6 +1265,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         if (isAboveShelf() != wasAboveShelf) {
             mAboveShelfChangedListener.onAboveShelfStateChanged(!wasAboveShelf);
         }
+        updateReclaimosTextMode();
     }
 
     @Override
@@ -1719,6 +1746,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         if (isAboveShelf() != wasAboveShelf) {
             mAboveShelfChangedListener.onAboveShelfStateChanged(!wasAboveShelf);
         }
+        updateReclaimosTextMode();
     }
 
     public void setHeadsUpAnimatingAwayListener(Consumer<Boolean> listener) {
@@ -1809,6 +1837,10 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
             mChildrenContainer.setTranslationY(translationY);
             // TODO: handle children fade out better
         }
+        if (mReclaimosRow != null) {
+            mReclaimosRow.setAlpha(contentAlpha);
+            mReclaimosRow.setTranslationY(translationY);
+        }
     }
 
     /**
@@ -1822,6 +1854,9 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         }
         if (mChildrenContainer != null) {
             mChildrenContainer.setContentAlpha(alpha);
+        }
+        if (mReclaimosRow != null) {
+            mReclaimosRow.setAlpha(alpha);
         }
     }
 
@@ -1993,6 +2028,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         float radius = getResources().getDimension(R.dimen.notification_corner_radius_small);
         mSmallRoundness = radius / getMaxRadius();
         initDimens();
+        mReclaimosLockscreen = getResources().getBoolean(R.bool.config_reclaimosLockscreen);
     }
 
     /**
@@ -2407,6 +2443,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
     }
 
     void onGutsOpened() {
+        updateReclaimosTextMode();
         resetTranslation();
         updateContentAccessibilityImportanceForGuts(false /* isEnabled */);
     }
@@ -2414,6 +2451,10 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
     void onGutsClosed() {
         updateContentAccessibilityImportanceForGuts(true /* isEnabled */);
         mIsSnoozed = false;
+        // The stock line above makes the notification views accessible again; in text mode they
+        // stay hidden behind the text row.
+        updateReclaimosTextMode();
+        applyReclaimosAccessibility();
     }
 
     /**
@@ -2856,6 +2897,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
                 updateBackgroundForGroupState();
             }
         }
+        updateReclaimosTextMode();
     }
 
     /**
@@ -2900,6 +2942,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
                 mAboveShelfChangedListener.onAboveShelfStateChanged(!wasAboveShelf);
             }
         }
+        updateReclaimosTextMode();
     }
 
     @Override
@@ -2912,7 +2955,9 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     public int getIntrinsicHeight() {
-        if (isUserLocked()) {
+        if (mReclaimosTextMode) {
+            return getReclaimosTextHeight();
+        } else if (isUserLocked()) {
             return getActualHeight();
         } else if (mGuts != null && mGuts.isExposed()) {
             return mGuts.getIntrinsicHeight();
@@ -3046,6 +3091,10 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         if (intrinsicBefore != getIntrinsicHeight()
                 && (intrinsicBefore != 0 || getActualHeight() > 0)) {
             notifyHeightChanged(/* needsAnimation= */ true);
+        } else if (mReclaimosTextMode && getReclaimosTextHeight() != mReclaimosReportedHeight) {
+            // The text row was measured again with new text, a new width or a new font size.
+            mReclaimosReportedHeight = getReclaimosTextHeight();
+            notifyHeightChanged(/* needsAnimation= */ true);
         }
         if (mMenuRow != null && mMenuRow.getMenuView() != null) {
             mMenuRow.onParentHeightUpdate();
@@ -3090,6 +3139,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         if (intrinsicBefore != intrinsicAfter) {
             notifyHeightChanged(/* needsAnimation= */ true);
         }
+        updateReclaimosTextMode();
     }
 
     /** Sets whether this notification row should show the notification expander or not */
@@ -3111,6 +3161,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
                 child.setHideSensitiveForIntrinsicHeight(hideSensitive);
             }
         }
+        updateReclaimosTextMode();
     }
 
     @Override
@@ -3155,6 +3206,8 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         mPrivateLayout.updateExpandButtons(isExpandable());
         updateShelfIconColor();
         mShowingPublicInitialized = true;
+        // Hides or shows the contents in the lock screen text row along with the stock views.
+        updateReclaimosTextMode();
     }
 
     private void animateShowingPublic(long delay, long duration, boolean showingPublic) {
@@ -3259,6 +3312,9 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     public boolean isContentExpandable() {
+        if (mReclaimosTextMode) {
+            return false;
+        }
         if (mIsSummaryWithChildren && !shouldShowPublic()) {
             return true;
         }
@@ -3268,6 +3324,9 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     protected View getContentView() {
+        if (mReclaimosTextMode) {
+            return mReclaimosRow;
+        }
         if (mIsSummaryWithChildren && !shouldShowPublic()) {
             return mChildrenContainer;
         }
@@ -3368,6 +3427,10 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         if (mChildrenContainer != null) {
             mChildrenContainer.setAlpha(1f);
             mChildrenContainer.setLayerType(LAYER_TYPE_NONE, null);
+        }
+        if (mReclaimosRow != null) {
+            mReclaimosRow.setAlpha(1f);
+            mReclaimosRow.setLayerType(LAYER_TYPE_NONE, null);
         }
     }
 
@@ -3501,6 +3564,9 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     public int getMaxContentHeight() {
+        if (mReclaimosTextMode) {
+            return getReclaimosTextHeight();
+        }
         if (mIsSummaryWithChildren && !shouldShowPublic()) {
             return mChildrenContainer.getMaxContentHeight();
         }
@@ -3510,6 +3576,9 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     public int getMinHeight(boolean ignoreTemporaryStates) {
+        if (mReclaimosTextMode) {
+            return getReclaimosTextHeight();
+        }
         if (!ignoreTemporaryStates && mGuts != null && mGuts.isExposed()) {
             return mGuts.getIntrinsicHeight();
         } else if (!ignoreTemporaryStates && canShowHeadsUp() && mIsHeadsUp
@@ -3526,6 +3595,9 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     public int getCollapsedHeight() {
+        if (mReclaimosTextMode) {
+            return getReclaimosTextHeight();
+        }
         if (mIsSummaryWithChildren && !shouldShowPublic()) {
             return mChildrenContainer.getCollapsedHeight();
         }
@@ -3638,7 +3710,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     protected boolean hideBackground() {
-        return mShowNoBackground || super.hideBackground();
+        return mShowNoBackground || mReclaimosTextMode || super.hideBackground();
     }
 
     public int getPositionOfChild(ExpandableNotificationRow childRow) {
@@ -3833,6 +3905,175 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
             return hasRoundedCorner();
         }
         return super.childNeedsClipping(child);
+    }
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (mReclaimosTextMode && child != mReclaimosRow
+                && (mMenuRow == null || child != mMenuRow.getMenuView())) {
+            // ReclaimOS notifications-v1: in text mode only the text row is drawn, with the swipe
+            // menu behind it. The notification views and the background are kept as they are.
+            return false;
+        }
+        return super.drawChild(canvas, child, drawingTime);
+    }
+
+    @Override
+    protected boolean needsOutline() {
+        return !mReclaimosTextMode && super.needsOutline();
+    }
+
+    @Override
+    protected void onChildVisibilityChanged(View child, int oldVisibility, int newVisibility) {
+        super.onChildVisibilityChanged(child, oldVisibility, newVisibility);
+        if (child == mGuts) {
+            // The guts can open on the lock screen too. They show on the stock row.
+            updateReclaimosTextMode();
+        }
+    }
+
+    /**
+     * ReclaimOS notifications-v1: sets whether the lock screen text row shows its bottom divider.
+     * Called after every notification list update, which can also move the row into or out of
+     * the lock screen sections.
+     */
+    public void setReclaimosLockscreenDivider(boolean visible) {
+        mReclaimosDividerVisible = visible;
+        if (mReclaimosRow != null) {
+            mReclaimosRow.setDividerVisible(visible);
+        }
+        updateReclaimosTextMode();
+    }
+
+    /**
+     * ReclaimOS notifications-v1: whether the row shows as a lock screen text row. Only a single
+     * notification in one of the lock screen sections does, while the lock screen shows. The
+     * stock row stays for heads-up, while it is dragged or shows its guts, and for incoming and
+     * ongoing calls, which keep their answer and hang up buttons.
+     */
+    private boolean shouldShowReclaimosText() {
+        if (!mReclaimosLockscreen || !mOnKeyguard || mEntry == null || mLayouts == null) {
+            return false;
+        }
+        int bucket = mEntry.getBucket();
+        if (bucket != BUCKET_RECLAIMOS_MESSAGES && bucket != BUCKET_RECLAIMOS_CALLS
+                && bucket != BUCKET_RECLAIMOS_NOTIFICATIONS) {
+            return false;
+        }
+        return !isChildInGroup() && !mIsSummaryWithChildren && !isPinned()
+                && !mHeadsupDisappearRunning && !isUserLocked()
+                && (mGuts == null || mGuts.getVisibility() == GONE)
+                && !ReclaimosNotificationClassifier.isInteractiveCall(
+                        mEntry.getSbn().getNotification());
+    }
+
+    /**
+     * ReclaimOS notifications-v1: switches between the text row and the stock row, and updates
+     * the text row's contents. The notification views stay inflated and bound as usual, so the
+     * stock row is back at once when the shade is pulled down or the lock screen goes away.
+     */
+    private void updateReclaimosTextMode() {
+        if (!mReclaimosLockscreen) {
+            return;
+        }
+        boolean textMode = shouldShowReclaimosText();
+        if (!textMode && !mReclaimosTextMode) {
+            return;
+        }
+        int intrinsicBefore = getIntrinsicHeight();
+        if (textMode) {
+            ensureReclaimosRow();
+            bindReclaimosRow();
+        }
+        boolean modeChanged = textMode != mReclaimosTextMode;
+        if (modeChanged) {
+            mReclaimosTextMode = textMode;
+            mReclaimosRow.setVisibility(textMode ? VISIBLE : GONE);
+            applyReclaimosAccessibility();
+            updateOutline();
+            updateBackground();
+            invalidate();
+        }
+        if (mReclaimosTextMode) {
+            mReclaimosReportedHeight = getReclaimosTextHeight();
+        }
+        if (getIntrinsicHeight() != intrinsicBefore) {
+            notifyHeightChanged(/* needsAnimation= */ !modeChanged);
+        }
+    }
+
+    private void ensureReclaimosRow() {
+        if (mReclaimosRow != null) {
+            return;
+        }
+        mReclaimosRow = (ReclaimosLockscreenRowView) LayoutInflater.from(mContext).inflate(
+                R.layout.reclaimos_lockscreen_notification_row, this, false);
+        mReclaimosRow.setDividerVisible(mReclaimosDividerVisible);
+        if (!mDismissUsingRowTranslationX) {
+            // Join a swipe that is already under way.
+            mReclaimosRow.setTranslationX(mPrivateLayout.getTranslationX());
+        }
+        addView(mReclaimosRow);
+        if (mTranslateableViews != null) {
+            mTranslateableViews.add(mReclaimosRow);
+        }
+    }
+
+    private void bindReclaimosRow() {
+        int bucket = mEntry.getBucket();
+        // The contents are hidden whenever the stock row would show the public version.
+        boolean redacted = mShowingPublic || shouldShowPublic();
+        if (!mReclaimosContentDirty && bucket == mReclaimosBoundBucket
+                && redacted == mReclaimosBoundRedacted) {
+            return;
+        }
+        ReclaimosNotificationClassifier.Category category;
+        if (bucket == BUCKET_RECLAIMOS_MESSAGES) {
+            category = ReclaimosNotificationClassifier.Category.MESSAGES;
+        } else if (bucket == BUCKET_RECLAIMOS_CALLS) {
+            category = ReclaimosNotificationClassifier.Category.CALLS;
+        } else {
+            category = ReclaimosNotificationClassifier.Category.NOTIFICATIONS;
+        }
+        mReclaimosRow.bind(ReclaimosLockscreenContentExtractor.extract(
+                mContext, mEntry.getSbn(), mAppName, category, redacted));
+        mReclaimosContentDirty = false;
+        mReclaimosBoundBucket = bucket;
+        mReclaimosBoundRedacted = redacted;
+    }
+
+    /** The text row's height, measured at the row's width if its last measurement is stale. */
+    private int getReclaimosTextHeight() {
+        ReclaimosLockscreenRowView row = mReclaimosRow;
+        if (row.isLayoutRequested() || row.getMeasuredHeight() == 0) {
+            int width = getMeasuredWidth() != 0 ? getMeasuredWidth() : getWidth();
+            width -= getPaddingStart() + getPaddingEnd();
+            if (width > 0) {
+                row.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+            }
+        }
+        return row.getMeasuredHeight();
+    }
+
+    /**
+     * In text mode, accessibility services read the text row instead of the notification views,
+     * which are not drawn. Otherwise the notification views are accessible as on the stock row.
+     */
+    private void applyReclaimosAccessibility() {
+        if (mReclaimosRow == null) {
+            return;
+        }
+        boolean contentEnabled = !mReclaimosTextMode && !areGutsExposed();
+        if (mLayouts != null) {
+            for (View view : mLayouts) {
+                updateChildAccessibilityImportance(view, contentEnabled);
+            }
+        }
+        if (mChildrenContainer != null) {
+            updateChildAccessibilityImportance(mChildrenContainer, contentEnabled);
+        }
+        updateChildAccessibilityImportance(mReclaimosRow, mReclaimosTextMode);
     }
 
     /**
@@ -4091,6 +4332,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         pw.print("isHeadsUpState()", isHeadsUpState());
         pw.print("isPinned()", isPinned());
         pw.print("headsupDisappearRunning", mHeadsupDisappearRunning);
+        pw.print("reclaimosTextMode", mReclaimosTextMode);
         pw.print("isExpanded()", isExpanded());
         pw.println();
     }

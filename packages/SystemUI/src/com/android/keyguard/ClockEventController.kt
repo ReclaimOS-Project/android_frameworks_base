@@ -66,6 +66,7 @@ import com.android.systemui.plugins.clocks.ZenData.ZenMode
 import com.android.systemui.res.R as SysuiR
 import com.android.systemui.scene.shared.flag.SceneContainerFlag
 import com.android.systemui.settings.UserTracker
+import com.android.systemui.shared.clocks.AnimatableClockView
 import com.android.systemui.shared.regionsampling.RegionSampler
 import com.android.systemui.statusbar.policy.BatteryController
 import com.android.systemui.statusbar.policy.BatteryController.BatteryStateChangeCallback
@@ -148,6 +149,14 @@ constructor(
         }
         val clockStr = clock.toString()
         loggers.forEach { it.d({ "New Clock: $str1" }) { str1 = clockStr } }
+
+        // ReclaimOS notifications-v1: a lighter clock on the lock screen (which always uses the
+        // small clock). Set before initialize() applies the first text style.
+        if (resources.getBoolean(SysuiR.bool.config_reclaimosLockscreen)) {
+            (clock.smallClock.view as? AnimatableClockView)?.setLockScreenWeight(
+                resources.getInteger(SysuiR.integer.reclaimos_lockscreen_clock_weight)
+            )
+        }
 
         clock.initialize(isDarkTheme(), dozeAmount, 0f)
 
@@ -587,6 +596,12 @@ constructor(
     }
 
     private fun getSmallClockSizePx(): Float {
+        // ReclaimOS notifications-v1: a larger lock screen clock.
+        if (resources.getBoolean(SysuiR.bool.config_reclaimosLockscreen)) {
+            return resources
+                .getDimensionPixelSize(SysuiR.dimen.reclaimos_lockscreen_clock_text_size)
+                .toFloat()
+        }
         return resources.getDimensionPixelSize(R.dimen.small_clock_text_size).toFloat()
     }
 

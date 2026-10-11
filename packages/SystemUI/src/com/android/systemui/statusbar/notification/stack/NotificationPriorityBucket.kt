@@ -24,13 +24,19 @@ import android.annotation.IntDef
             BUCKET_SOCIAL,
             BUCKET_RECS,
             BUCKET_PROMO,
-            BUCKET_SILENT
+            BUCKET_SILENT,
+            BUCKET_RECLAIMOS_MESSAGES,
+            BUCKET_RECLAIMOS_CALLS,
+            BUCKET_RECLAIMOS_NOTIFICATIONS,
         ]
 )
 annotation class PriorityBucket {
     companion object {
         fun getAllInOrder(): IntArray =
             intArrayOf(
+                BUCKET_RECLAIMOS_MESSAGES,
+                BUCKET_RECLAIMOS_CALLS,
+                BUCKET_RECLAIMOS_NOTIFICATIONS,
                 BUCKET_MEDIA_CONTROLS,
                 BUCKET_TOP_ONGOING,
                 BUCKET_HEADS_UP,
@@ -63,3 +69,8 @@ const val BUCKET_RECS = 12
 const val BUCKET_PROMO = 13
 const val BUCKET_SILENT = 6
 
+// ReclaimOS notifications-v1: lock screen sections (ReclaimosLockscreenCoordinator). They only hold
+// notifications while the lock screen is showing.
+const val BUCKET_RECLAIMOS_MESSAGES = 14
+const val BUCKET_RECLAIMOS_CALLS = 15
+const val BUCKET_RECLAIMOS_NOTIFICATIONS = 16

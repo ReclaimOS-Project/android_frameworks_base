@@ -239,7 +239,18 @@ constructor(
                         ),
                 )
             }
-            val smallClockTopMargin = keyguardClockViewModel.getSmallClockTopMargin()
+            // ReclaimOS notifications-v1: the clock, and the date and notifications below it,
+            // sit a little lower.
+            val reclaimosClockOffset =
+                if (context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+                    context.resources.getDimensionPixelSize(
+                        R.dimen.reclaimos_lockscreen_clock_extra_top_margin
+                    )
+                } else {
+                    0
+                }
+            val smallClockTopMargin =
+                keyguardClockViewModel.getSmallClockTopMargin() + reclaimosClockOffset
             create(R.id.small_clock_guideline_top, ConstraintSet.HORIZONTAL_GUIDELINE)
             setGuidelineBegin(R.id.small_clock_guideline_top, smallClockTopMargin)
             connect(customR.id.lockscreen_clock_view, TOP, R.id.small_clock_guideline_top, BOTTOM)
@@ -248,7 +259,7 @@ constructor(
             setTransformPivot(customR.id.lockscreen_clock_view_large, Float.NaN, Float.NaN)
 
             val smallClockBottom =
-                keyguardClockViewModel.getSmallClockTopMargin() +
+                smallClockTopMargin +
                     context.resources.getDimensionPixelSize(customR.dimen.small_clock_height)
             val dateWeatherSmartspaceHeight = getDimen(context, DATE_WEATHER_VIEW_HEIGHT).toFloat()
             val marginBetweenSmartspaceAndNotification =

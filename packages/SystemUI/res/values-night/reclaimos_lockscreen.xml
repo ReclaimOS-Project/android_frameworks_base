@@ -8,4 +8,6 @@
     <color name="reclaimos_lockscreen_background">@android:color/system_neutral1_900</color>
     <color name="reclaimos_lockscreen_text_primary">@android:color/system_neutral1_50</color>
     <color name="reclaimos_lockscreen_text_secondary">@android:color/system_neutral2_200</color>
+    <!-- ReclaimOS notifications-v1: lock screen notification row divider. -->
+    <color name="reclaimos_lockscreen_divider">@android:color/system_neutral1_800</color>
 </resources>

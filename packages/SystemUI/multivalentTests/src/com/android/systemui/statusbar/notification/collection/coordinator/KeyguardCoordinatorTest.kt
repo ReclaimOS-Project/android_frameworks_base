@@ -53,6 +53,7 @@ class KeyguardCoordinatorTest : SysuiTestCase() {
                 keyguardNotifVisibilityProvider,
                 sectionHeaderVisibilityProvider,
                 statusBarStateController,
+                context.resources,
             )
         keyguardCoordinator.attach(notifPipeline)
         onStateChangeListener =

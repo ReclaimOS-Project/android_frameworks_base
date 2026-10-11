@@ -76,7 +76,7 @@ constructor(
     private val time = Calendar.getInstance()
 
     private val dozingWeightInternal: Int
-    private val lockScreenWeightInternal: Int
+    private var lockScreenWeightInternal: Int
     private val isSingleLineInternal: Boolean
 
     private var format: CharSequence? = null
@@ -292,6 +292,15 @@ constructor(
     fun setLineSpacingScale(scale: Float) {
         lineSpacingScale = scale
         setLineSpacing(0f, lineSpacingScale)
+    }
+
+    /**
+     * ReclaimOS notifications-v1: replaces the lock screen weight (300 by default). It applies
+     * from the next text style change, such as the one initialize() makes. Stock code never
+     * calls this.
+     */
+    fun setLockScreenWeight(@IntRange(from = 0, to = 1000) weight: Int) {
+        lockScreenWeightInternal = weight
     }
 
     fun setColors(@ColorInt dozingColor: Int, lockScreenColor: Int) {

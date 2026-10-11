@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2026 The ReclaimOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- ReclaimOS notifications-v1: a lock screen notification heading (MESSAGES, PHONE CALLS,
+     NOTIFICATIONS). Text only; ReclaimosSectionHeaderView applies the sizes and colors. -->
+<com.android.systemui.statusbar.notification.reclaimos.ReclaimosSectionHeaderView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/reclaimos_lockscreen_row_side_padding"
+        android:paddingEnd="@dimen/reclaimos_lockscreen_row_side_padding"
+        android:paddingTop="@dimen/reclaimos_lockscreen_heading_padding_top"
+        android:paddingBottom="@dimen/reclaimos_lockscreen_heading_padding_bottom"
+        android:orientation="horizontal"
+        android:forceHasOverlappingRendering="false"
+        android:clipChildren="false">
+
+        <TextView
+            android:id="@+id/header_label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@*android:string/config_headlineFontFamilyMedium"
+            android:textAllCaps="true"
+            android:letterSpacing="@dimen/reclaimos_lockscreen_heading_letter_spacing"
+            android:textSize="@dimen/reclaimos_lockscreen_heading_text_size"
+            android:textColor="@color/reclaimos_lockscreen_text_secondary"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:focusable="false"
+            android:forceHasOverlappingRendering="false" />
+
+        <!-- Required by SectionHeaderView; never shown. -->
+        <ImageView
+            android:id="@+id/btn_clear_all"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone"
+            android:importantForAccessibility="no" />
+    </LinearLayout>
+</com.android.systemui.statusbar.notification.reclaimos.ReclaimosSectionHeaderView>

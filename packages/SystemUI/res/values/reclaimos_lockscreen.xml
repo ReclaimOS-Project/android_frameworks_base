@@ -3,7 +3,7 @@
      SPDX-FileCopyrightText: 2026 The ReclaimOS Project
      SPDX-License-Identifier: Apache-2.0
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- ReclaimOS lockscreen-v1: kill switch for the ReclaimOS primary lock screen presentation
          (opaque background and text colors that follow the system light/dark theme,
          always-small centered clock, centered date, lower notifications, no lock screen
@@ -24,7 +24,46 @@
     </style>
 
     <!-- ReclaimOS lockscreen-v1: extra space between the date and the lock screen notifications,
-         added to keyguard_status_view_bottom_margin so notifications start roughly a third of
-         the way down the screen. Scaled by screen height (values-h*dp). -->
-    <dimen name="reclaimos_keyguard_notification_extra_top_margin">0dp</dimen>
+         added to keyguard_status_view_bottom_margin (20dp). Since notifications-v1 it is
+         negative: the first heading's own top padding already separates it from the date. -->
+    <dimen name="reclaimos_keyguard_notification_extra_top_margin">-8dp</dimen>
+
+    <!-- ReclaimOS notifications-v1: the clock and date. The clock is larger and lighter than
+         stock and sits a little lower; the date is larger. These are the short-screen values;
+         values-h740dp has the roomier ones. -->
+    <dimen name="reclaimos_lockscreen_clock_text_size">92dp</dimen>
+    <integer name="reclaimos_lockscreen_clock_weight">230</integer>
+    <dimen name="reclaimos_lockscreen_clock_extra_top_margin">0dp</dimen>
+    <dimen name="reclaimos_lockscreen_date_text_size">20dp</dimen>
+    <dimen name="reclaimos_lockscreen_date_line_height">26dp</dimen>
+
+    <!-- ReclaimOS notifications-v1: lock screen notifications are text rows (title and time,
+         then a preview of up to two lines) under MESSAGES, PHONE CALLS and NOTIFICATIONS
+         headings, with a thin divider between rows. These are the short-screen values;
+         values-h740dp has the roomier ones. -->
+    <color name="reclaimos_lockscreen_divider">@android:color/system_neutral1_100</color>
+    <dimen name="reclaimos_lockscreen_row_side_padding">12dp</dimen>
+    <dimen name="reclaimos_lockscreen_row_padding_top">7dp</dimen>
+    <dimen name="reclaimos_lockscreen_row_padding_bottom">9dp</dimen>
+    <dimen name="reclaimos_lockscreen_row_preview_margin_top">1dp</dimen>
+    <dimen name="reclaimos_lockscreen_row_time_margin_start">12dp</dimen>
+    <dimen name="reclaimos_lockscreen_row_title_text_size">16sp</dimen>
+    <dimen name="reclaimos_lockscreen_row_preview_text_size">14sp</dimen>
+    <dimen name="reclaimos_lockscreen_row_time_text_size">13sp</dimen>
+    <dimen name="reclaimos_lockscreen_divider_height">1dp</dimen>
+    <dimen name="reclaimos_lockscreen_heading_text_size">12sp</dimen>
+    <dimen name="reclaimos_lockscreen_heading_padding_top">8dp</dimen>
+    <dimen name="reclaimos_lockscreen_heading_padding_bottom">0dp</dimen>
+    <dimen name="reclaimos_lockscreen_more_text_size">14sp</dimen>
+    <item name="reclaimos_lockscreen_heading_letter_spacing" format="float" type="dimen">0.14</item>
+
+    <string name="reclaimos_lockscreen_heading_messages">Messages</string>
+    <string name="reclaimos_lockscreen_heading_calls">Phone calls</string>
+    <string name="reclaimos_lockscreen_heading_notifications">Notifications</string>
+    <!-- Below the lock screen notifications when more do not fit; tapping it opens them all. -->
+    <string name="reclaimos_lockscreen_more">+<xliff:g id="count" example="3">%1$d</xliff:g> more</string>
+    <plurals name="reclaimos_lockscreen_more_description">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> more notification</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> more notifications</item>
+    </plurals>
 </resources>
