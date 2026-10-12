@@ -371,6 +371,10 @@ constructor(
         )
     }
 
+    fun onReclaimosNotificationFloorChanged(floor: Float) {
+        keyguardInteractor.setReclaimosNotificationFloor(floor)
+    }
+
     /** Is there an expanded pulse, are we animating in response? */
     private fun isPulseExpandingAnimated(): Flow<AnimatedValue<Boolean>> {
         return pulseExpansionInteractor.isPulseExpanding

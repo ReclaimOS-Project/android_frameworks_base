@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /** Encapsulates business-logic specifically related to the shared notification stack container. */
@@ -107,6 +108,27 @@ constructor(
             deviceEntryUdfpsInteractor.isUdfpsSupported,
         ) { ambientIndicationVisible, isUdfpsSupported ->
             isUdfpsSupported || !ambientIndicationVisible
+        }
+
+    /**
+     * ReclaimOS: lowest position the lock screen notification list may reach, or 0 to keep the
+     * stock limit. The list may extend over the device entry icon only while that icon is a hidden
+     * padlock: no UDFPS, no ambient indication and no unlocked glyph to tap.
+     */
+    val reclaimosNotificationFloor: Flow<Float> =
+        if (!context.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+            flowOf(0f)
+        } else {
+            combine(
+                    keyguardInteractor.reclaimosNotificationFloor,
+                    keyguardInteractor.ambientIndicationVisible,
+                    deviceEntryUdfpsInteractor.isUdfpsSupported,
+                    keyguardInteractor.isKeyguardDismissible,
+                ) { floor, ambientIndicationVisible, isUdfpsSupported, isDismissible ->
+                    if (ambientIndicationVisible || isUdfpsSupported || isDismissible) 0f
+                    else floor
+                }
+                .distinctUntilChanged()
         }
 
     /** Top position (without translation) of the shared container. */

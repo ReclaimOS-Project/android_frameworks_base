@@ -33,6 +33,7 @@ import android.view.ViewGroup
 import android.view.ViewGroup.OnHierarchyChangeListener
 import android.view.ViewPropertyAnimator
 import android.view.WindowInsets
+import android.widget.TextView
 import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
@@ -86,6 +87,7 @@ import com.android.systemui.util.ui.stopAnimating
 import com.android.systemui.util.ui.value
 import com.google.android.msdl.data.model.MSDLToken
 import com.google.android.msdl.domain.MSDLPlayer
+import kotlin.math.max
 import kotlin.math.min
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.DisposableHandle
@@ -514,6 +516,22 @@ object KeyguardRootViewBinder {
                     notificationListPlaceholder.bottom.toFloat(),
                     animate = shouldAnimate,
                 )
+            }
+
+            // ReclaimOS: report where the indication text area can start, sized for its maximum
+            // awake content so that changing messages do not move it
+            if (view.resources.getBoolean(R.bool.config_reclaimosLockscreen)) {
+                childViews[indicationArea]?.let { area ->
+                    val text =
+                        area.findViewById<TextView>(R.id.keyguard_indication_text_bottom)
+                    val params = area.layoutParams as? ViewGroup.MarginLayoutParams
+                    if (text != null && params != null && view.height > 0) {
+                        val textHeight = max(text.minHeight, text.lineHeight * text.maxLines)
+                        viewModel.onReclaimosNotificationFloorChanged(
+                            (view.height - params.bottomMargin - textHeight).toFloat()
+                        )
+                    }
+                }
             }
 
             burnInParams.update { current ->

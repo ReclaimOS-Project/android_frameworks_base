@@ -88,6 +88,7 @@ import com.android.systemui.util.kotlin.Utils.Companion.sample as sampleCombine
 import com.android.systemui.util.kotlin.sample
 import dagger.Lazy
 import javax.inject.Inject
+import kotlin.math.max
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.currentCoroutineContext
@@ -102,6 +103,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
@@ -715,6 +717,22 @@ constructor(
             .distinctUntilChanged()
             .dumpWhileCollecting("availableHeight")
 
+    /** ReclaimOS: lock screen height between the placeholder bottom and the notification floor. */
+    private val reclaimosExtraHeight: Flow<Float> =
+        if (SceneContainerFlag.isEnabled) {
+                flowOf(0f)
+            } else {
+                combine(
+                    bounds,
+                    interactor.reclaimosNotificationFloor,
+                    shadeInteractor.isShadeLayoutWide,
+                ) { bounds, floor, isShadeLayoutWide ->
+                    if (floor <= 0f || isShadeLayoutWide) 0f else max(0f, floor - bounds.bottom)
+                }
+            }
+            .distinctUntilChanged()
+            .dumpWhileCollecting("reclaimosExtraHeight")
+
     /**
      * When on keyguard, there is limited space to display notifications so calculate how many could
      * be shown. Otherwise, there is no limit since the vertical space will be scrollable.
@@ -748,6 +766,7 @@ constructor(
                 availableHeight,
                 interactor.notificationStackChanged,
                 interactor.useExtraShelfSpace,
+                reclaimosExtraHeight,
             ) { flows ->
                 val showLimitedNotifications = flows[0] as Boolean
                 val (showUnlimitedNotifications, isOnLockscreen) =
@@ -755,14 +774,29 @@ constructor(
                 val isUserInteracting = flows[2] as Boolean
                 val availableHeight = flows[3] as Float
                 val useExtraShelfSpace = flows[5] as Boolean
+                val reclaimosExtraHeight = flows[6] as Float
 
                 if (!isUserInteracting) {
                     if (showLimitedNotifications) {
+                        val stockMaxNotifications =
+                            calculateSpace(availableHeight, useExtraShelfSpace)
                         emit(
                             LockscreenDisplayConfig(
                                 isOnLockscreen = isOnLockscreen,
                                 maxNotifications =
-                                    calculateSpace(availableHeight, useExtraShelfSpace),
+                                    if (reclaimosExtraHeight > 0f) {
+                                        // The shelf must stay above the floor, but never show
+                                        // fewer notifications than the stock limit
+                                        max(
+                                            stockMaxNotifications,
+                                            calculateSpace(
+                                                availableHeight + reclaimosExtraHeight,
+                                                false,
+                                            ),
+                                        )
+                                    } else {
+                                        stockMaxNotifications
+                                    },
                             )
                         )
                     } else if (showUnlimitedNotifications) {

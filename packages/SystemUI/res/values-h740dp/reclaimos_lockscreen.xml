@@ -5,15 +5,14 @@
 -->
 <resources>
     <!-- ReclaimOS notifications-v1: lock screen notification spacing for taller screens; see
-         values/reclaimos_lockscreen.xml. -->
-    <dimen name="reclaimos_lockscreen_row_padding_top">11dp</dimen>
-    <dimen name="reclaimos_lockscreen_row_padding_bottom">14dp</dimen>
+         values/reclaimos_lockscreen.xml. Rows keep the short-screen padding so that five fit
+         with two headings and "+N more". -->
     <dimen name="reclaimos_lockscreen_row_preview_margin_top">2dp</dimen>
     <dimen name="reclaimos_lockscreen_row_title_text_size">17.5sp</dimen>
     <dimen name="reclaimos_lockscreen_row_preview_text_size">16sp</dimen>
     <dimen name="reclaimos_lockscreen_row_time_text_size">14sp</dimen>
     <dimen name="reclaimos_lockscreen_heading_text_size">13sp</dimen>
-    <dimen name="reclaimos_lockscreen_heading_padding_top">18dp</dimen>
+    <dimen name="reclaimos_lockscreen_heading_padding_top">12dp</dimen>
     <dimen name="reclaimos_lockscreen_more_text_size">15sp</dimen>
     <dimen name="reclaimos_lockscreen_clock_extra_top_margin">20dp</dimen>
     <dimen name="reclaimos_lockscreen_date_text_size">22dp</dimen>

@@ -140,6 +140,18 @@ constructor(
         _notificationPlaceholderBounds.value = position
     }
 
+    private val _reclaimosNotificationFloor = MutableStateFlow(0f)
+
+    /**
+     * ReclaimOS: top of the space reserved for the lock screen indication text, in the same
+     * coordinates as [notificationContainerBounds]. 0 when unknown.
+     */
+    val reclaimosNotificationFloor: StateFlow<Float> = _reclaimosNotificationFloor.asStateFlow()
+
+    fun setReclaimosNotificationFloor(floor: Float) {
+        _reclaimosNotificationFloor.value = floor
+    }
+
     /** Whether the system is in doze mode. */
     val isDozing: StateFlow<Boolean> = repository.isDozing
 
