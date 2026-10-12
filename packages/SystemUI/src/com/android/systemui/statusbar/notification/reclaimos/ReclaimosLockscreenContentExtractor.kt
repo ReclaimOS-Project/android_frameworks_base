@@ -69,14 +69,7 @@ object ReclaimosLockscreenContentExtractor {
                 category == Category.MESSAGES ->
                     messageTitleAndPreview(context, notification)
                         ?: ((resolveTitle(notification) ?: app) to resolveText(notification))
-                category == Category.CALLS -> {
-                    val caller =
-                        notification.extras
-                            .getParcelable(Notification.EXTRA_CALL_PERSON, Person::class.java)
-                            ?.name
-                    (clean(caller) ?: resolveTitle(notification) ?: app) to
-                        resolveText(notification)
-                }
+                category == Category.CALLS -> callTitleAndPreview(notification, app)
                 else -> app to joinTitleAndText(notification, app)
             }
 
@@ -156,6 +149,40 @@ object ReclaimosLockscreenContentExtractor {
                 text
             }
         return title to preview
+    }
+
+    /**
+     * For calls: the caller as the title. CallStyle names the caller directly. A notification
+     * whose public version keeps its title but leaves out its text, as the Dialer's missed call
+     * notifications do, has a generic title ("Missed call") and the caller in its text, so the
+     * two swap places. Anything else is shown as the app wrote it.
+     */
+    private fun callTitleAndPreview(
+        notification: Notification,
+        app: CharSequence,
+    ): Pair<CharSequence?, CharSequence?> {
+        val title = resolveTitle(notification)
+        val text = resolveText(notification)
+        val caller =
+            clean(
+                notification.extras
+                    .getParcelable(Notification.EXTRA_CALL_PERSON, Person::class.java)
+                    ?.name
+            )
+        if (caller != null) {
+            return caller to text
+        }
+        val publicVersion = notification.publicVersion
+        if (
+            title != null &&
+                text != null &&
+                publicVersion != null &&
+                resolveTitle(publicVersion) == title &&
+                resolveText(publicVersion) == null
+        ) {
+            return text to title
+        }
+        return (title ?: app) to text
     }
 
     /** "Title: text", or whichever of the two the notification has. A title equal to the app name is left out. */
