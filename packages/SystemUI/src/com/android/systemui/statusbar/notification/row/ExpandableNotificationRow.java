@@ -4045,8 +4045,13 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         } else {
             category = ReclaimosNotificationClassifier.Category.NOTIFICATIONS;
         }
-        mReclaimosRow.bind(ReclaimosLockscreenContentExtractor.extract(
-                mContext, mEntry.getSbn(), mAppName, category, redacted));
+        Trace.beginSection("ExpNotRow#bindReclaimosRow");
+        try {
+            mReclaimosRow.bind(ReclaimosLockscreenContentExtractor.extract(
+                    mContext, mEntry.getSbn(), mAppName, category, redacted));
+        } finally {
+            Trace.endSection();
+        }
         mReclaimosContentDirty = false;
         mReclaimosBoundBucket = bucket;
         mReclaimosBoundRedacted = redacted;

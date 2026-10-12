@@ -42,6 +42,8 @@ object ReclaimosLockscreenContentExtractor {
     // Previews show at most two lines; there is no point in copying more text than this.
     private const val MAX_TEXT_LENGTH = 500
 
+    private val WHITESPACE = Regex("\\s+")
+
     @JvmStatic
     fun extract(
         context: Context,
@@ -207,7 +209,7 @@ object ReclaimosLockscreenContentExtractor {
         val plain =
             text.subSequence(0, minOf(text.length, MAX_TEXT_LENGTH))
                 .toString()
-                .replace(Regex("\\s+"), " ")
+                .replace(WHITESPACE, " ")
                 .trim()
         return plain.ifEmpty { null }
     }
