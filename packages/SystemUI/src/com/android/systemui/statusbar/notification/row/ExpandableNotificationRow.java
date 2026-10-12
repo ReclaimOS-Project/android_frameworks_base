@@ -3946,6 +3946,16 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
     }
 
     /**
+     * ReclaimOS notifications-v1: reads the text row's contents again, for a new day or a time
+     * change that changes how its time reads. A row that is not showing now does so when it next
+     * shows.
+     */
+    public void refreshReclaimosLockscreenTime() {
+        mReclaimosContentDirty = true;
+        updateReclaimosTextMode();
+    }
+
+    /**
      * ReclaimOS notifications-v1: whether the row shows as a lock screen text row. Only a single
      * notification in one of the lock screen sections does, while the lock screen shows. The
      * stock row stays for heads-up, while it is dragged or shows its guts, and for incoming and

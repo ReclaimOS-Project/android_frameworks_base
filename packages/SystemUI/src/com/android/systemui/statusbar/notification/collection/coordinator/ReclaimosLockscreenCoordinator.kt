@@ -6,8 +6,14 @@
 package com.android.systemui.statusbar.notification.collection.coordinator
 
 import android.annotation.StringRes
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.Resources
+import android.os.UserHandle
 import android.view.LayoutInflater
+import com.android.systemui.broadcast.BroadcastDispatcher
 import com.android.systemui.dagger.qualifiers.Main
 import com.android.systemui.plugins.statusbar.StatusBarStateController
 import com.android.systemui.res.R
@@ -38,6 +44,9 @@ import javax.inject.Inject
  * - groups are split into separate rows (their summary is dropped, as for any group that loses
  *   all its children).
  *
+ * Each row shows the time for today's notifications and the date for older ones. A new day, or a
+ * change of time, time zone or 12/24-hour format, has the rows read their time again.
+ *
  * It decides only the order and the sections. Which notifications are shown, and whether their
  * contents are hidden, stays with the stock coordinators. The pulled-down shade, locked or not,
  * uses the stock sections and groups.
@@ -51,6 +60,7 @@ constructor(
     private val statusBarStateController: StatusBarStateController,
     private val classifier: ReclaimosNotificationClassifier,
     private val visualStabilityCoordinator: VisualStabilityCoordinator,
+    private val broadcastDispatcher: BroadcastDispatcher,
 ) : Coordinator {
 
     private val enabled = resources.getBoolean(R.bool.config_reclaimosLockscreen)
@@ -112,6 +122,21 @@ constructor(
         if (!enabled) return
         onKeyguard = statusBarStateController.state == StatusBarState.KEYGUARD
         statusBarStateController.addCallback(stateListener)
+        // The date change arrives at midnight, or when the device next wakes up after it. Rows on
+        // the lock screen update at once, the others when they next show there.
+        broadcastDispatcher.registerReceiver(
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    pipeline.allNotifs.forEach { it.row?.refreshReclaimosLockscreenTime() }
+                }
+            },
+            IntentFilter().apply {
+                addAction(Intent.ACTION_DATE_CHANGED)
+                addAction(Intent.ACTION_TIME_CHANGED)
+                addAction(Intent.ACTION_TIMEZONE_CHANGED)
+            },
+            user = UserHandle.SYSTEM,
+        )
         pipeline.addPromoter(groupSplitter)
         // A new default Phone or SMS app can move notifications between sections. Invalidating
         // one sectioner re-sections every notification.
